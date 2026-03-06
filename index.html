@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alma Orders - Plataforma Integral</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      [x-cloak] {
+        display: none !important;
+      }
+      .lime-accent {
+        color: #bef264;
+      }
+      .bg-card {
+        background: #0a0a0a;
+        border: 1px solid rgba(190, 242, 100, 0.1);
+      }
+      .emerald-glow {
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+      }
+      .animate-in {
+        animation: fadeIn 0.3s ease-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-black text-white font-sans"
+    x-data="{ view: 'login', tab: 'inicio', adminTab: 'dashboard', logo: 'https://via.placeholder.com/150x50/000000/bef264?text=ALMA+ORDERS', /* REEMPLAZAR CON TU LOGO PNG */ // DATOS SIMULADOS (INICIAN EN CERO) user: { nombre: '', email: '', foto: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', ventasMes: 0, comisiones: 0, historia: 0, codigoPersonal: 'ALMA-PROMO-2024', invitadoPor: '' }, // BASE DE DATOS SIMULADA embajadores: [], codigoMaestro: 'ALMA-DUENO-01', inputCodigo: '', login() { if(this.user.email) this.view = 'app'; else alert('Ingresa tu email'); }, registrar() { if(this.inputCodigo === this.codigoMaestro || this.inputCodigo === 'ALMA-PROMO-2024') { this.user.invitadoPor = this.inputCodigo; this.view = 'app'; this.embajadores.push({nombre: this.user.nombre, ventas: 0}); } else { alert('Código de invitación inválido. Pídelo al administrador.'); } }, simularVenta() { this.user.ventasMes++; this.user.comisiones += 10000; // Simulación 40% de una venta básica this.user.historia += 10000; alert('¡Venta registrada con éxito!'); } }"
+  >
+    <!-- PANTALLA: LOGIN / REGISTRO -->
+    <template x-if="view === 'login'">
+      <div
+        class="min-h-screen flex flex-col items-center justify-center p-8 animate-in"
+      >
+        <img :src="logo" alt="Logo Alma Orders" class="mb-8 max-w-[200px]" />
+        <div class="w-full max-w-sm space-y-6">
+          <h2
+            class="text-2xl font-black text-center uppercase tracking-tighter"
+          >
+            Bienvenido
+          </h2>
+          <input
+            type="text"
+            x-model="user.nombre"
+            placeholder="Tu Nombre"
+            class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl"
+          />
+          <input
+            type="email"
+            x-model="user.email"
+            placeholder="Tu Email"
+            class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl"
+          />
+          <input
+            type="text"
+            x-model="inputCodigo"
+            placeholder="Código de Invitación"
+            class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl lime-accent font-bold"
+          />
+          <div class="flex gap-4">
+            <button
+              @click="registrar()"
+              class="flex-1 bg-[#bef264] text-black font-black py-4 rounded-2xl uppercase text-xs tracking-widest"
+            >
+              Registrarse
+            </button>
+            <button
+              @click="view = 'admin'"
+              class="px-6 bg-zinc-800 text-white font-black py-4 rounded-2xl uppercase text-[10px]"
+            >
+              Soy Dueño
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+    <!-- PANTALLA: APP EMBAJADOR -->
+    <template x-if="view === 'app'">
+      <div class="min-h-screen pb-24 animate-in">
+        <!-- HEADER DINÁMICO -->
+        <header
+          class="p-6 flex justify-between items-center border-b border-zinc-900"
+        >
+          <img :src="logo" alt="Logo" class="h-6" />
+          <div
+            @click="tab = 'perfil'"
+            class="w-10 h-10 rounded-full border border-[#bef264] overflow-hidden cursor-pointer"
+          >
+            <img :src="user.foto" alt="Avatar" />
+          </div>
+        </header>
+        <!-- TABS EMBAJADOR -->
+        <main class="p-6">
+          <!-- INICIO -->
+          <div x-show="tab === 'inicio'" class="space-y-6">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-card p-5 rounded-[28px]">
+                <p class="text-[10px] text-zinc-500 font-bold uppercase">
+                  Ventas
+                </p>
+                <p class="text-2xl font-black" x-text="user.ventasMes"></p>
+              </div>
+              <div class="bg-card p-5 rounded-[28px]">
+                <p class="text-[10px] lime-accent font-bold uppercase">
+                  Ganancia
+                </p>
+                <p
+                  class="text-2xl font-black lime-accent"
+                  x-text="'$' + user.comisiones"
+                ></p>
+              </div>
+            </div>
+            <button
+              @click="simularVenta()"
+              class="w-full bg-zinc-900 border border-zinc-800 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+            >
+              Simular Venta (+1)
+            </button>
+          </div>
+          <!-- RED -->
+          <div x-show="tab === 'equipo'" class="space-y-4">
+            <h3 class="font-black uppercase text-sm">Tu Red de Referidos</h3>
+            <div class="bg-card p-5 rounded-3xl text-center">
+              <p
+                class="text-zinc-500 text-xs mb-4 uppercase font-bold tracking-widest"
+              >
+                Tu código para invitar:
+              </p>
+              <p
+                class="text-3xl font-black lime-accent mb-2"
+                x-text="user.codigoPersonal"
+              ></p>
+              <button
+                @click="alert('Código copiado!')"
+                class="text-[10px] font-black uppercase text-white/50"
+              >
+                Copiar Código
+              </button>
+            </div>
+          </div>
+          <!-- PERFIL -->
+          <div x-show="tab === 'perfil'" class="space-y-6">
+            <div class="text-center py-6">
+              <div class="relative w-24 h-24 mx-auto mb-4">
+                <img
+                  :src="user.foto"
+                  class="rounded-full border-4 border-[#bef264] w-full h-full object-cover"
+                />
+                <button
+                  @click="user.foto = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + Math.random()"
+                  class="absolute bottom-0 right-0 bg-white text-black w-8 h-8 rounded-full flex items-center justify-center text-xs shadow-lg"
+                >
+                  <i class="fas fa-camera"></i>
+                </button>
+              </div>
+              <h2
+                class="text-2xl font-black uppercase"
+                x-text="user.nombre"
+              ></h2>
+              <p class="text-[10px] text-zinc-500 font-bold uppercase">
+                ID: AO-7724
+              </p>
+            </div>
+            <button
+              @click="view = 'login'"
+              class="w-full bg-red-900/20 text-red-500 font-black py-4 rounded-2xl uppercase text-[10px]"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
+        </main>
+        <!-- NAV INFERIOR -->
+        <nav
+          class="fixed bottom-0 w-full bg-black/90 backdrop-blur-xl border-t border-zinc-900 flex justify-around p-4 z-50"
+        >
+          <button
+            @click="tab = 'inicio'"
+            :class="tab === 'inicio' ? 'lime-accent' : 'text-zinc-600'"
+          >
+            <i class="fas fa-th-large text-xl"></i>
+          </button>
+          <button
+            @click="tab = 'equipo'"
+            :class="tab === 'equipo' ? 'lime-accent' : 'text-zinc-600'"
+          >
+            <i class="fas fa-users text-xl"></i>
+          </button>
+          <button
+            @click="tab = 'rangos'"
+            :class="tab === 'rangos' ? 'lime-accent' : 'text-zinc-600'"
+          >
+            <i class="fas fa-medal text-xl"></i>
+          </button>
+          <button
+            @click="tab = 'perfil'"
+            :class="tab === 'perfil' ? 'lime-accent' : 'text-zinc-600'"
+          >
+            <i class="fas fa-user-circle text-xl"></i>
+          </button>
+        </nav>
+      </div>
+    </template>
+    <!-- PANTALLA: ADMIN / DUEÑO -->
+    <template x-if="view === 'admin'">
+      <div class="min-h-screen animate-in bg-zinc-950">
+        <header
+          class="p-6 bg-black border-b border-zinc-900 flex justify-between items-center"
+        >
+          <h1 class="font-black uppercase tracking-tighter">
+            Dueño <span class="lime-accent">Alma Orders</span>
+          </h1>
+          <button
+            @click="view = 'login'"
+            class="text-[10px] font-black text-zinc-500 uppercase"
+          >
+            Salir
+          </button>
+        </header>
+        <main class="p-6 space-y-6">
+          <!-- Generador de Códigos -->
+          <section class="bg-card p-6 rounded-[32px]">
+            <p class="text-[10px] text-zinc-500 font-black uppercase mb-2">
+              Código Maestro Actual
+            </p>
+            <div class="flex justify-between items-center">
+              <p
+                class="text-2xl font-black lime-accent"
+                x-text="codigoMaestro"
+              ></p>
+              <button
+                @click="codigoMaestro = 'ALMA-' + Math.floor(Math.random()*9000 + 1000)"
+                class="bg-[#bef264] text-black px-4 py-2 rounded-xl text-[10px] font-black"
+              >
+                REGENERAR
+              </button>
+            </div>
+          </section>
+          <!-- Lista de Embajadores -->
+          <section class="space-y-4">
+            <h3 class="font-black text-xs uppercase text-zinc-500">
+              Embajadores Registrados (<span x-text="embajadores.length"></span
+              >)
+            </h3>
+            <template x-for="emb in embajadores">
+              <div
+                class="bg-card p-4 rounded-2xl flex justify-between items-center"
+              >
+                <span class="font-bold text-sm" x-text="emb.nombre"></span>
+                <span
+                  class="text-[10px] bg-zinc-800 px-3 py-1 rounded-full text-zinc-400"
+                  >0 VENTAS</span
+                >
+              </div>
+            </template>
+            <template x-if="embajadores.length === 0">
+              <p class="text-center text-zinc-700 text-xs italic py-10">
+                No hay embajadores registrados aún.
+              </p>
+            </template>
+          </section>
+        </main>
+      </div>
+    </template>
+  </body>
+</html>
