@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alma Orders - Panel Oficial</title>
+    <!-- Librerías de iconos y funcionalidades -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      /* COLORES OFICIALES ALMA ORDERS */
+      :root {
+        --verde-lima: #bef264;
+        --fondo: #0a0a0a;
+        --tarjeta: #1a1a1a;
+        --borde: #333333;
+      }
+      body {
+        background-color: var(--fondo);
+        color: white;
+        font-family: sans-serif;
+      }
+      .bg-card {
+        background-color: var(--tarjeta);
+        border: 1px solid var(--borde);
+        border-radius: 24px;
+      }
+      .text-lima {
+        color: var(--verde-lima);
+      }
+      .bg-lima {
+        background-color: var(--verde-lima);
+        color: black;
+      } /* Animaciones */
+      [x-cloak] {
+        display: none !important;
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      } /* Navegación Inferior */
+      nav {
+        background-color: rgba(10, 10, 10, 0.95);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid var(--borde);
+      }
+    </style>
+  </head>
+  <body
+    x-data="{ tab: 'inicio', ventas: 0, comision: 0, nombre: 'Embajador Alma', modalVenta: false, procesarVenta(monto) { this.ventas++; this.comision += (monto * 0.4); this.modalVenta = false; alert('¡Venta registrada con éxito!'); } }"
+  >
+    <!-- CABECERA -->
+    <header
+      class="p-5 flex justify-between items-center border-b border-[#333] sticky top-0 z-50 bg-[#0a0a0a]"
+    >
+      <div class="flex items-center gap-2">
+        <div
+          class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-black font-black italic text-lg"
+        >
+          AO
+        </div>
+        <span class="font-black text-lg tracking-tighter uppercase"
+          >ALMA <span class="text-lima">ORDERS</span></span
+        >
+      </div>
+      <div
+        class="w-10 h-10 rounded-full border-2 border-[#bef264] overflow-hidden"
+      >
+        <img
+          src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+          alt="Avatar"
+        />
+      </div>
+    </header>
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="p-5 pb-32">
+      <!-- SECCIÓN: INICIO (DASHBOARD) -->
+      <div x-show="tab === 'inicio'" class="fade-in space-y-6">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-card p-5 text-center">
+            <p class="text-zinc-500 text-[10px] font-bold uppercase mb-1">
+              Ventas Mes
+            </p>
+            <p class="text-3xl font-black" x-text="ventas"></p>
+          </div>
+          <div class="bg-card p-5 text-center">
+            <p class="text-lima text-[10px] font-bold uppercase mb-1">
+              Ganancia Est.
+            </p>
+            <p
+              class="text-3xl font-black text-lima"
+              x-text="'$' + comision"
+            ></p>
+          </div>
+        </div>
+        <!-- Botón Principal -->
+        <button
+          @click="modalVenta = true"
+          class="w-full bg-white text-black font-black py-5 rounded-2xl text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+        >
+          Registrar Nueva Venta
+        </button>
+        <!-- Barra de Progreso Bono -->
+        <div class="bg-card p-6">
+          <h3 class="text-[10px] font-black uppercase text-zinc-500 mb-4">
+            Progreso Bono Trimestral
+          </h3>
+          <div
+            class="w-full bg-black h-4 rounded-full overflow-hidden border border-[#333]"
+          >
+            <div
+              class="h-full bg-lima shadow-[0_0_10px_#bef264] transition-all duration-500"
+              :style="'width:' + (ventas >= 100 ? 100 : ventas) + '%'"
+            ></div>
+          </div>
+          <div class="flex justify-between mt-2 font-bold text-[10px]">
+            <span class="text-zinc-500 italic">Objetivo: 100 Ventas</span>
+            <span class="text-lima" x-text="ventas + ' / 100'"></span>
+          </div>
+        </div>
+      </div>
+      <!-- SECCIÓN: RED / EQUIPO -->
+      <div x-show="tab === 'red'" class="fade-in space-y-6">
+        <h2 class="text-2xl font-black uppercase italic text-lima">
+          Mi Red de Trabajo
+        </h2>
+        <div class="space-y-3">
+          <div
+            class="bg-card p-4 flex justify-between items-center border-l-4 border-lima"
+          >
+            <div>
+              <p class="font-black text-sm uppercase">Juan Pérez</p>
+              <p class="text-[10px] text-zinc-500 font-bold uppercase">
+                Ventas Mes: 12
+              </p>
+            </div>
+            <p class="font-black text-lima text-lg">$4.800</p>
+          </div>
+          <div
+            class="bg-card p-4 flex justify-between items-center border-l-4 border-zinc-700"
+          >
+            <div>
+              <p class="font-black text-sm uppercase">Maria García</p>
+              <p class="text-[10px] text-zinc-500 font-bold uppercase">
+                Ventas Mes: 8
+              </p>
+            </div>
+            <p class="font-black text-white text-lg">$3.200</p>
+          </div>
+        </div>
+      </div>
+      <!-- SECCIÓN: PERFIL -->
+      <div
+        x-show="tab === 'perfil'"
+        class="fade-in text-center space-y-8 py-10"
+      >
+        <div
+          class="w-32 h-32 mx-auto rounded-full border-4 border-lima p-1 shadow-2xl"
+        >
+          <img
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+            class="rounded-full bg-zinc-800"
+          />
+        </div>
+        <div>
+          <h2
+            class="text-3xl font-black uppercase tracking-tighter"
+            x-text="nombre"
+          ></h2>
+          <p
+            class="text-lima font-bold text-[10px] mt-2 uppercase tracking-widest"
+          >
+            Embajador Verificado • ID: AO-7724
+          </p>
+        </div>
+        <div class="bg-card p-5 flex justify-between items-center text-left">
+          <span class="text-zinc-500 font-bold text-xs">Cerrar Sesión</span>
+          <button
+            @click="location.reload()"
+            class="text-red-500 font-black uppercase text-xs"
+          >
+            Salir
+          </button>
+        </div>
+      </div>
+    </main>
+    <!-- MODAL: REGISTRAR VENTA -->
+    <div
+      x-show="modalVenta"
+      x-cloak
+      class="fixed inset-0 z-[100] flex items-end"
+    >
+      <div
+        class="absolute inset-0 bg-black/90 backdrop-blur-sm"
+        @click="modalVenta = false"
+      ></div>
+      <div
+        class="bg-[#1a1a1a] w-full rounded-t-[40px] p-10 border-t-2 border-lima z-[110] fade-in"
+      >
+        <h2
+          class="text-2xl font-black mb-2 uppercase italic tracking-tighter text-white"
+        >
+          Registrar Venta
+        </h2>
+        <p class="text-zinc-500 text-sm mb-8 font-medium italic">
+          Selecciona el tipo de membresía vendida.
+        </p>
+        <div class="space-y-4">
+          <button
+            @click="procesarVenta(35000)"
+            class="w-full bg-lima text-black font-black py-5 rounded-2xl text-xs uppercase tracking-widest shadow-xl"
+          >
+            Elite ($35,000)
+          </button>
+          <button
+            @click="procesarVenta(25000)"
+            class="w-full bg-zinc-800 text-white font-black py-5 rounded-2xl text-xs uppercase tracking-widest"
+          >
+            Avanzada ($25,000)
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- NAVEGACIÓN INFERIOR -->
+    <nav
+      class="fixed bottom-0 left-0 w-full p-5 z-50 flex justify-around items-center"
+    >
+      <button
+        @click="tab = 'inicio'"
+        :class="tab === 'inicio' ? 'text-lima scale-125' : 'text-zinc-600'"
+        class="transition-all duration-300"
+      >
+        <i class="fas fa-th-large text-2xl"></i>
+      </button>
+      <button
+        @click="tab = 'red'"
+        :class="tab === 'red' ? 'text-lima scale-125' : 'text-zinc-600'"
+        class="transition-all duration-300"
+      >
+        <i class="fas fa-users text-2xl"></i>
+      </button>
+      <button
+        @click="tab = 'perfil'"
+        :class="tab === 'perfil' ? 'text-lima scale-125' : 'text-zinc-600'"
+        class="transition-all duration-300"
+      >
+        <i class="fas fa-user-circle text-2xl"></i>
+      </button>
+    </nav>
+  </body>
+</html>
