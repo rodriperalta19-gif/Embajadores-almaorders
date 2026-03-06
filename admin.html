@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Control Alma Orders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --lima: #bef264;
+        --dark: #070707;
+      }
+      body {
+        background-color: var(--dark);
+        color: white;
+        font-family: sans-serif;
+      }
+      .card {
+        background: #111;
+        border: 1px solid #222;
+        border-radius: 20px;
+      }
+      .text-lima {
+        color: var(--lima);
+      }
+      .bg-lima {
+        background-color: var(--lima);
+        color: black;
+      }
+    </style>
+  </head>
+  <body x-data="{ tab: 'ventas' }">
+    <header
+      class="p-6 bg-black border-b border-zinc-900 flex justify-between items-center sticky top-0 z-50"
+    >
+      <h1 class="font-black uppercase italic text-sm">
+        CEO <span class="text-lima">ALMA ORDERS</span>
+      </h1>
+      <div class="flex gap-4 text-[10px] font-bold uppercase">
+        <button
+          @click="tab = 'ventas'"
+          :class="tab === 'ventas' ? 'text-lima' : 'text-zinc-500'"
+        >
+          Ventas
+        </button>
+        <button
+          @click="tab = 'red'"
+          :class="tab === 'red' ? 'text-lima' : 'text-zinc-500'"
+        >
+          Red
+        </button>
+      </div>
+    </header>
+    <main class="p-6 max-w-lg mx-auto space-y-6">
+      <!-- SECCIÓN VENTAS (AUDITORÍA) -->
+      <div x-show="tab === 'ventas'" class="space-y-4">
+        <h2 class="text-xl font-black uppercase italic">
+          Validación de Ventas
+        </h2>
+        <div class="card p-5 space-y-4">
+          <div
+            class="flex justify-between items-center border-b border-zinc-800 pb-3"
+          >
+            <div>
+              <p class="text-xs font-bold text-white">
+                Embajador: Socio Fundador
+              </p>
+              <p class="text-[9px] text-zinc-500 uppercase font-black">
+                Venta Elite ($35,000)
+              </p>
+            </div>
+            <span
+              class="text-[9px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded font-black border border-emerald-500/20"
+              >PENDIENTE</span
+            >
+          </div>
+          <button
+            @click="alert('Venta aprobada y saldo liberado')"
+            class="w-full bg-lima text-black font-black py-3 rounded-xl text-[10px] uppercase"
+          >
+            Aprobar Venta
+          </button>
+        </div>
+      </div>
+      <!-- SECCIÓN RED (CONTROL DE EMBBAJADORES) -->
+      <div x-show="tab === 'red'" class="space-y-4">
+        <h2 class="text-xl font-black uppercase italic">
+          Embajadores Registrados
+        </h2>
+        <div class="card p-4 flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-[10px] font-bold"
+            >
+              SF
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase">Socio Fundador</p>
+              <p class="text-[8px] text-zinc-500 font-black">ID: ALMA-7724</p>
+            </div>
+          </div>
+          <button class="text-lima text-[10px] font-black uppercase">
+            Ver Perfil
+          </button>
+        </div>
+      </div>
+    </main>
+    <!-- FOOTER INFO -->
+    <footer
+      class="fixed bottom-0 w-full p-4 bg-black text-center border-t border-zinc-900"
+    >
+      <p class="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">
+        Total Comisiones por Pagar: $124.000 USD
+      </p>
+    </footer>
+  </body>
+</html>
