@@ -1,6 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/", "destination": "/alma-dashboard.html" },
-    { "source": "/(.*)", "destination": "/alma-dashboard.html" }
-  ]
-}
