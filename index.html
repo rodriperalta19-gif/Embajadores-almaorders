@@ -2149,20 +2149,32 @@ function saveEmb(){
           toast('Error Auth: '+errStr,'err');
           return;
         }
-        // El email ya existe en Auth (Supabase ya creó el perfil via trigger)
-        // Buscar su ID y actualizar el perfil con los datos correctos
+        // El email ya existe en Auth. Actualizamos la contrasena real en Auth
+        // (antes esto no se hacia, y quedaba la contrasena vieja sin cambiar)
+        // y despues vinculamos/actualizamos el perfil con los datos correctos.
         _sb.from('profiles').select('id').eq('email', email).maybeSingle().then(function(res){
           if(res.error || !res.data){
             toast('El email ya existe pero no se pudo vincular el perfil','err');
             return;
           }
-          profileData.id = res.data.id;
-          _sb.from('profiles').update(profileData).eq('id', res.data.id).then(function(res2){
-            if(res2.error){toast('Error perfil: '+res2.error.message,'err');return;}
-            toast(nombre+' creado con acceso al sistema','ok');
-            closeModal('m-emb');
-            setTimeout(function(){ alert('Credenciales de '+nombre+':\nEmail: '+email+'\nContrasena: '+pass); },300);
-            loadData(); goPage('adm-embajadores');
+          var uid = res.data.id;
+          fetch('https://tehnhzeoxlcocfapfbho.supabase.co/auth/v1/admin/users/'+uid,{
+            method:'PUT',
+            headers:{
+              'Content-Type':'application/json',
+              'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8',
+              'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8'
+            },
+            body:JSON.stringify({password:pass,email_confirm:true})
+          }).catch(function(){}).then(function(){
+            profileData.id = uid;
+            _sb.from('profiles').update(profileData).eq('id', uid).then(function(res2){
+              if(res2.error){toast('Error perfil: '+res2.error.message,'err');return;}
+              toast(nombre+' creado con acceso al sistema','ok');
+              closeModal('m-emb');
+              setTimeout(function(){ alert('Credenciales de '+nombre+':\nEmail: '+email+'\nContrasena: '+pass); },300);
+              loadData(); goPage('adm-embajadores');
+            });
           });
         });
         return;
@@ -2187,10 +2199,20 @@ function deleteEmb(id){
   if(!e) return;
   confirm2('Eliminar embajador','Se eliminara a '+(e.nombre||'')+' '+(e.apellido||'')+' permanentemente.','del',
   function(){
-    _sb.from('profiles').delete().eq('id',id).then(function(res){
-      if(res.error){toast('Error: '+res.error.message,'err');return;}
-      toast((e.nombre||'')+' eliminado','err');
-      loadData(); goPage('adm-embajadores');
+    fetch('https://tehnhzeoxlcocfapfbho.supabase.co/auth/v1/admin/users/'+id,{
+      method:'DELETE',
+      headers:{
+        'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8',
+        'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8'
+      }
+    }).catch(function(){}).then(function(){
+      // Se intenta borrar el usuario de Auth aunque falle (por si ya no existia);
+      // siempre borramos el perfil igual para no dejar nada colgado.
+      _sb.from('profiles').delete().eq('id',id).then(function(res){
+        if(res.error){toast('Error: '+res.error.message,'err');return;}
+        toast((e.nombre||'')+' eliminado','err');
+        loadData(); goPage('adm-embajadores');
+      });
     });
   },'Eliminar','btn-danger');
 }
