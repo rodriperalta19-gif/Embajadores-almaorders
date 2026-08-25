@@ -15,6 +15,14 @@
   --gold:#F59E0B;--blu:#3B82F6;--red:#EF4444;--pur:#8B5CF6;--teal:#14B8A6;
   --r:10px;--r2:14px;--r3:20px;
 }
+[data-theme="light"]{
+  --gd:rgba(0,140,58,.10);
+  --dk:#F4F6F9;--dk2:#FFFFFF;--dk3:#FFFFFF;--dk4:#F0F2F6;--dk5:#E7EBF1;
+  --bd:rgba(15,23,42,.08);--bd2:rgba(15,23,42,.14);
+  --t:#0F172A;--t2:#54637A;--t3:#8A97AA;
+}
+.theme-toggle-btn{background:var(--dk4);border:1px solid var(--bd2);color:var(--t);border-radius:99px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all .15s}
+.theme-toggle-btn:hover{background:var(--dk5)}
 html,body{height:100%;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--dk);color:var(--t);font-size:14px;line-height:1.5}
 
 /* LOGIN */
@@ -396,6 +404,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
   #tipo-grid { grid-template-columns: 1fr 1fr !important; }
 }
 </style>
+<script>(function(){try{var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 </head>
 <body>
 
@@ -424,6 +433,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
   <button class="ham-btn" id="ham-btn" aria-label="Abrir menú">☰</button>
   <span class="mobile-topbar-title" id="mobile-topbar-title">Dashboard</span>
   <div class="mobile-topbar-right">
+    <button class="theme-toggle-btn" id="btn-theme-toggle-mobile" title="Cambiar tema"></button>
     <div class="mobile-av" id="mobile-av" title="Perfil"></div>
     <button class="btn btn-secondary btn-sm" id="mobile-logout-btn" style="padding:5px 10px;font-size:11px">Salir</button>
   </div>
@@ -730,6 +740,14 @@ function initMobileDrawer(){
   if(mobileLogout){
     mobileLogout.onclick = doLogout;
   }
+  var mobileTheme = $('btn-theme-toggle-mobile');
+  if(mobileTheme && !mobileTheme._drawerInit){
+    mobileTheme._drawerInit = true;
+    mobileTheme.addEventListener('click', toggleTheme);
+  }
+  document.querySelectorAll('.theme-toggle-btn').forEach(function(b){
+    b.textContent = document.documentElement.getAttribute('data-theme')==='light' ? '🌙' : '☀️';
+  });
   // Sync avatar in mobile topbar
   _syncMobileAvatar();
 }
@@ -2531,10 +2549,21 @@ function buildTopbarRight(){
   if(!tr) return;
   var nombre = CU ? (CU.nombre||CU.email||'') : '';
   tr.innerHTML =
+    '<button class="theme-toggle-btn" id="btn-theme-toggle" title="Cambiar tema" style="margin-right:10px">' + (document.documentElement.getAttribute('data-theme')==='light'?'🌙':'☀️') + '</button>' +
     '<span style="font-size:12px;font-weight:700;color:var(--t2);margin-right:8px">' + nombre + '</span>' +
     '<button class="btn btn-secondary btn-sm" id="btn-logout" style="padding:5px 12px;font-size:12px">Cerrar sesión</button>';
   var lb = document.getElementById('btn-logout');
   if(lb) lb.addEventListener('click', doLogout);
+  var tb = document.getElementById('btn-theme-toggle');
+  if(tb) tb.addEventListener('click', toggleTheme);
+}
+
+function toggleTheme(){
+  var cur = document.documentElement.getAttribute('data-theme')||'dark';
+  var next = cur==='dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try{ localStorage.setItem('theme', next); }catch(e){}
+  document.querySelectorAll('.theme-toggle-btn').forEach(function(b){ b.textContent = next==='light' ? '🌙' : '☀️'; });
 }
 
 // ═══ AFTER RENDER ═══
@@ -2665,6 +2694,9 @@ document.addEventListener('DOMContentLoaded',function(){
   var phf=document.getElementById('photo-file'); if(phf) phf.addEventListener('change',function(){handlePhotoChange(this);});
   var paw=document.getElementById('prof-av-wrap');
   if(paw) paw.addEventListener('click',function(){ var pf=document.getElementById('photo-file'); if(pf) pf.click(); });
+  // NOTA: no agregar addEventListener acá — openNewEmb()/editEmb() ya asignan
+  // btn-save-emb.onclick = saveEmb cada vez que se abre el modal. Agregar otro
+  // listener acá hacia que saveEmb() se ejecute DOS VECES por cada clic.
   // Optional elements — wrapped safely
   var bsb=document.getElementById('btn-save-bono'); if(bsb) bsb.addEventListener('click',function(){});
   var bsr=document.getElementById('btn-submit-retiro'); if(bsr) bsr.addEventListener('click',function(){});
