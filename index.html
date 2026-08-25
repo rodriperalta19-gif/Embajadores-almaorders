@@ -404,7 +404,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
   #tipo-grid { grid-template-columns: 1fr 1fr !important; }
 }
 </style>
-<script>(function(){try{var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 </head>
 <body>
 
@@ -2106,6 +2106,21 @@ function editEmb(id){
   openModal('m-emb');
 }
 
+// Llama a nuestra funcion de servidor /api/admin, mandando el token de
+// la sesion actual (del admin logueado) para que el servidor verifique
+// que es admin de verdad antes de hacer nada. La service_role key ya
+// NO vive aca, vive solo en el servidor (variables de entorno de Vercel).
+function adminApi(action, payload){
+  return _sb.auth.getSession().then(function(sess){
+    var token = sess && sess.data && sess.data.session ? sess.data.session.access_token : '';
+    return fetch('/api/admin',{
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+      body: JSON.stringify({ action:action, payload:payload })
+    }).then(function(r){ return r.json().then(function(data){ return {status:r.status, ok:r.ok, data:data}; }); });
+  });
+}
+
 function saveEmb(){
   var id = document.getElementById('emb-id').value;
   var nombre = (document.getElementById('emb-nombre')||{}).value.trim();
@@ -2131,17 +2146,10 @@ function saveEmb(){
     if(!pass||pass.length<6){toast('La contrasena debe tener al menos 6 caracteres','err');return;}
     var btn2 = document.getElementById('btn-save-emb');
     if(btn2){btn2.disabled=true;btn2.textContent='Creando...';}
-    fetch('https://tehnhzeoxlcocfapfbho.supabase.co/auth/v1/admin/users',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8',
-        'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8'
-      },
-      body:JSON.stringify({email:email,password:pass,email_confirm:true})
-    }).then(function(r){return r.json();}).then(function(authData){
+    adminApi('create_user',{email:email,password:pass}).then(function(resp){
       if(btn2){btn2.disabled=false;btn2.textContent='Crear embajador';}
-      if(authData.error||!authData.id){
+      var authData = resp.data;
+      if(!resp.ok||!authData.id){
         var errRaw = authData.msg || authData.error || '';
         var errStr = typeof errRaw === 'string' ? errRaw : JSON.stringify(errRaw);
         var yaExiste = errStr.toLowerCase().indexOf('already') !== -1;
@@ -2158,15 +2166,7 @@ function saveEmb(){
             return;
           }
           var uid = res.data.id;
-          fetch('https://tehnhzeoxlcocfapfbho.supabase.co/auth/v1/admin/users/'+uid,{
-            method:'PUT',
-            headers:{
-              'Content-Type':'application/json',
-              'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8',
-              'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8'
-            },
-            body:JSON.stringify({password:pass,email_confirm:true})
-          }).catch(function(){}).then(function(){
+          adminApi('reset_password',{userId:uid,password:pass}).catch(function(){}).then(function(){
             profileData.id = uid;
             _sb.from('profiles').update(profileData).eq('id', uid).then(function(res2){
               if(res2.error){toast('Error perfil: '+res2.error.message,'err');return;}
@@ -2199,13 +2199,7 @@ function deleteEmb(id){
   if(!e) return;
   confirm2('Eliminar embajador','Se eliminara a '+(e.nombre||'')+' '+(e.apellido||'')+' permanentemente.','del',
   function(){
-    fetch('https://tehnhzeoxlcocfapfbho.supabase.co/auth/v1/admin/users/'+id,{
-      method:'DELETE',
-      headers:{
-        'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8',
-        'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaG5oemVveGxjb2NmYXBmYmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTUxNjU3NiwiZXhwIjoyMDkxMDkyNTc2fQ.vuZ1nUiSALkI51JiPkbuescZr7p2F9iXjVAtcKP_TY8'
-      }
-    }).catch(function(){}).then(function(){
+    adminApi('delete_user',{userId:id}).catch(function(){}).then(function(){
       // Se intenta borrar el usuario de Auth aunque falle (por si ya no existia);
       // siempre borramos el perfil igual para no dejar nada colgado.
       _sb.from('profiles').delete().eq('id',id).then(function(res){
