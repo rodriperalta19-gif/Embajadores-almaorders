@@ -2199,9 +2199,19 @@ function deleteEmb(id){
   if(!e) return;
   confirm2('Eliminar embajador','Se eliminara a '+(e.nombre||'')+' '+(e.apellido||'')+' permanentemente.','del',
   function(){
-    adminApi('delete_user',{userId:id}).catch(function(){}).then(function(){
-      // Se intenta borrar el usuario de Auth aunque falle (por si ya no existia);
-      // siempre borramos el perfil igual para no dejar nada colgado.
+    adminApi('delete_user',{userId:id}).then(function(resp){
+      if(!resp.ok){
+        console.warn('No se pudo borrar el usuario de Auth:', resp.data);
+        toast('Aviso: el perfil se borro pero el usuario de Auth podria seguir activo ('+(resp.data&&resp.data.error||'error desconocido')+')','err');
+      }
+      // Borramos el perfil igual para no dejar nada colgado en la tabla.
+      _sb.from('profiles').delete().eq('id',id).then(function(res){
+        if(res.error){toast('Error: '+res.error.message,'err');return;}
+        toast((e.nombre||'')+' eliminado','err');
+        loadData(); goPage('adm-embajadores');
+      });
+    }).catch(function(err){
+      toast('Aviso: no se pudo contactar al servidor para borrar Auth ('+err.message+'). Se borro solo el perfil.','err');
       _sb.from('profiles').delete().eq('id',id).then(function(res){
         if(res.error){toast('Error: '+res.error.message,'err');return;}
         toast((e.nombre||'')+' eliminado','err');
