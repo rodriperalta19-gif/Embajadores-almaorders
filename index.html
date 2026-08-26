@@ -420,6 +420,27 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
     <div class="fg"><label class="flabel">Contraseña</label><input class="finput" id="li-pass" type="password" placeholder="••••••••"></div>
     <div id="li-err" style="display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--r);padding:9px 12px;font-size:12.5px;color:var(--red);margin-bottom:12px"></div>
     <button class="btn btn-primary w100" id="login-btn" style="padding:12px;font-size:13px;justify-content:center">Ingresar al panel</button>
+    <div style="text-align:center;margin-top:12px">
+      <a href="#" id="li-forgot-link" style="color:var(--t2);font-size:12px;text-decoration:underline">¿Olvidaste tu contraseña?</a>
+    </div>
+  </div>
+
+  <div class="login-box" id="forgot-box" style="display:none">
+    <div class="login-logo"><h1>Alma Orders</h1><p>Recuperar contraseña</p></div>
+    <div class="fg"><label class="flabel">Email</label><input class="finput" id="fg-email" type="email" placeholder="tu@email.com"></div>
+    <div id="fg-msg" style="display:none;border-radius:var(--r);padding:9px 12px;font-size:12.5px;margin-bottom:12px"></div>
+    <button class="btn btn-primary w100" id="fg-send-btn" style="padding:12px;font-size:13px;justify-content:center">Enviar instrucciones</button>
+    <div style="text-align:center;margin-top:12px">
+      <a href="#" id="fg-back-link" style="color:var(--t2);font-size:12px;text-decoration:underline">Volver al inicio de sesión</a>
+    </div>
+  </div>
+
+  <div class="login-box" id="recovery-box" style="display:none">
+    <div class="login-logo"><h1>Alma Orders</h1><p>Elegí tu nueva contraseña</p></div>
+    <div class="fg"><label class="flabel">Nueva contraseña</label><input class="finput" id="rc-pass-new" type="password" placeholder="••••••••"></div>
+    <div class="fg"><label class="flabel">Confirmar contraseña</label><input class="finput" id="rc-pass-conf" type="password" placeholder="••••••••"></div>
+    <div id="rc-msg" style="display:none;border-radius:var(--r);padding:9px 12px;font-size:12.5px;margin-bottom:12px"></div>
+    <button class="btn btn-primary w100" id="rc-save-btn" style="padding:12px;font-size:13px;justify-content:center">Guardar nueva contraseña</button>
   </div>
 </div>
 
@@ -2470,6 +2491,79 @@ function tfaq(i){
 }
 
 // ═══ LOGIN / AUTH ═══
+
+// --- Recuperar contrasena: mostrar/ocultar los 3 paneles del login ---
+function showLoginPanel(which){
+  var boxes = {login: document.querySelector('#login-wrap .login-box'), forgot: document.getElementById('forgot-box'), recovery: document.getElementById('recovery-box')};
+  // el primer .login-box (login normal) no tiene id propio; lo tomamos por posicion
+  var all = document.querySelectorAll('#login-wrap .login-box');
+  all.forEach(function(b){ b.style.display='none'; });
+  if(which==='login' && all[0]) all[0].style.display='block';
+  if(which==='forgot') document.getElementById('forgot-box').style.display='block';
+  if(which==='recovery') document.getElementById('recovery-box').style.display='block';
+}
+
+function showForgotMsg(msg, ok){
+  var el = document.getElementById('fg-msg');
+  if(!el) return;
+  el.style.display='block';
+  el.style.background = ok ? 'rgba(0,200,83,.08)' : 'rgba(239,68,68,.08)';
+  el.style.border = '1px solid ' + (ok ? 'rgba(0,200,83,.2)' : 'rgba(239,68,68,.2)');
+  el.style.color = ok ? 'var(--g)' : 'var(--red)';
+  el.textContent = msg;
+}
+
+function showRecoveryMsg(msg, ok){
+  var el = document.getElementById('rc-msg');
+  if(!el) return;
+  el.style.display='block';
+  el.style.background = ok ? 'rgba(0,200,83,.08)' : 'rgba(239,68,68,.08)';
+  el.style.border = '1px solid ' + (ok ? 'rgba(0,200,83,.2)' : 'rgba(239,68,68,.2)');
+  el.style.color = ok ? 'var(--g)' : 'var(--red)';
+  el.textContent = msg;
+}
+
+function sendPasswordReset(){
+  var email = (document.getElementById('fg-email')||{}).value.trim().toLowerCase();
+  if(!email){ showForgotMsg('Ingresa tu email','err'); return; }
+  var btn = document.getElementById('fg-send-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Enviando...'; }
+  _sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://embajadores.almaorders.com.ar/' }).then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='Enviar instrucciones'; }
+    // Por seguridad Supabase no confirma si el email existe o no; mostramos
+    // siempre el mismo mensaje para no revelar qué emails estan registrados.
+    showForgotMsg('Si el email existe, te llegara un correo con instrucciones para restablecer tu contrasena.', true);
+  });
+}
+
+function saveRecoveryPassword(){
+  var nw = (document.getElementById('rc-pass-new')||{}).value;
+  var conf = (document.getElementById('rc-pass-conf')||{}).value;
+  if(!nw || nw.length<6){ showRecoveryMsg('La contrasena debe tener al menos 6 caracteres','err'); return; }
+  if(nw!==conf){ showRecoveryMsg('Las contrasenas no coinciden','err'); return; }
+  var btn = document.getElementById('rc-save-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Guardando...'; }
+  _sb.auth.updateUser({password:nw}).then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='Guardar nueva contrasena'; }
+    if(res.error){ showRecoveryMsg('Error: '+res.error.message,'err'); return; }
+    showRecoveryMsg('Contrasena actualizada. Redirigiendo...', true);
+    setTimeout(function(){
+      _sb.auth.signOut().then(function(){ window.location.href = 'https://embajadores.almaorders.com.ar/'; });
+    }, 1500);
+  });
+}
+
+// Supabase, al entrar desde el link del mail de recuperacion, dispara este
+// evento con una sesion temporal. Detectamos ese momento para mostrar el
+// formulario de "nueva contrasena" en vez del login normal.
+_sb.auth.onAuthStateChange(function(event, session){
+  if(event === 'PASSWORD_RECOVERY'){
+    document.getElementById('login-wrap').style.display='flex';
+    document.getElementById('app').style.display='none';
+    showLoginPanel('recovery');
+  }
+});
+
 function showLoginError(msg){
   var err=document.getElementById('li-err');
   if(err){err.style.display='block';err.textContent=msg;}
@@ -2708,6 +2802,14 @@ function afterRender(id){
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('login-btn').addEventListener('click',doLogin);
   document.getElementById('li-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  document.getElementById('li-forgot-link').addEventListener('click',function(e){
+    e.preventDefault(); showLoginPanel('forgot');
+  });
+  document.getElementById('fg-back-link').addEventListener('click',function(e){
+    e.preventDefault(); showLoginPanel('login');
+  });
+  document.getElementById('fg-send-btn').addEventListener('click',sendPasswordReset);
+  document.getElementById('rc-save-btn').addEventListener('click',saveRecoveryPassword);
   document.querySelectorAll('[data-close]').forEach(function(btn){
     btn.addEventListener('click',function(){closeModal(btn.dataset.close);});
   });
