@@ -1656,6 +1656,7 @@ function buildAdmEmbajadores(){
     row += '<span class="badge '+(e.is_active?'badge-g':'badge-n')+'" style="flex-shrink:0">'+(e.is_active?'Activo':'Inactivo')+'</span>';
     row += '<div class="flex gap8" style="flex-shrink:0">';
     row += '<button class="btn btn-xs btn-secondary btn-edit-emb" data-id="'+e.id+'">Editar</button>';
+    row += '<button class="btn btn-xs btn-secondary btn-reset-pass-emb" data-id="'+e.id+'" data-nombre="'+(e.nombre||'')+' '+(e.apellido||'')+'">Reset pass</button>';
     row += '<button class="btn btn-xs btn-danger btn-del-emb" data-id="'+e.id+'">Eliminar</button>';
     row += '</div></div>';
 
@@ -2215,6 +2216,22 @@ function saveEmb(){
   }
 }
 
+function resetEmbPassword(id, nombre){
+  var pass = window.prompt('Nueva contrasena para '+nombre+' (minimo 6 caracteres):');
+  if(pass === null) return; // cancelado por el usuario
+  if(!pass || pass.length < 6){ toast('La contrasena debe tener al menos 6 caracteres','err'); return; }
+  adminApi('reset_password', {userId:id, password:pass}).then(function(resp){
+    if(!resp.ok){
+      toast('Error: '+(resp.data && (resp.data.error||resp.data.msg) || 'no se pudo actualizar'),'err');
+      return;
+    }
+    toast('Contrasena de '+nombre+' actualizada','ok');
+    setTimeout(function(){ alert('Nueva contrasena de '+nombre+':\n'+pass); }, 300);
+  }).catch(function(err){
+    toast('Error de conexion: '+err.message,'err');
+  });
+}
+
 function deleteEmb(id){
   var e = (STATE.allEmbajadores||[]).find(function(x){return x.id===id;});
   if(!e) return;
@@ -2707,6 +2724,9 @@ function afterRender(id){
       });
       document.querySelectorAll('.btn-del-emb').forEach(function(b){
         if(!b._bound){ b._bound=true; b.addEventListener('click',function(){ deleteEmb(b.dataset.id); }); }
+      });
+      document.querySelectorAll('.btn-reset-pass-emb').forEach(function(b){
+        if(!b._bound){ b._bound=true; b.addEventListener('click',function(){ resetEmbPassword(b.dataset.id, b.dataset.nombre); }); }
       });
     }
     attachEmbButtons();
