@@ -688,13 +688,15 @@ var NAV_ADM = [
   { id:'adm-embajadores', ico:'👥', label:'Embajadores' },
   { id:'adm-ingresos', ico:'💰', label:'Ingresos' },
   { id:'adm-estadisticas', ico:'📈', label:'Estadísticas' },
+  { id:'adm-auditoria', ico:'📋', label:'Auditoría' },
 ];
 var TITLES = {
   'dashboard':'Dashboard','ingresos':'Mis Ingresos','referidos':'Mis Referidos',
   'bonos':'Bonificaciones','soporte':'Soporte',
   'adm-dashboard':'Panel Admin','adm-embajadores':'Gestión de Embajadores',
   'adm-mis-ingresos':'Mis Ventas como Embajador (CEO)',
-  'adm-ingresos':'Revisión de Ingresos','adm-estadisticas':'Estadísticas Globales'
+  'adm-ingresos':'Revisión de Ingresos','adm-estadisticas':'Estadísticas Globales',
+  'adm-auditoria':'Registro de Auditoría'
 };
 
 // ═══════════════ BUILD NAV ═══════════════
@@ -950,6 +952,10 @@ soporte: function(){
 
 'adm-estadisticas': function(){
   return buildAdmEstadisticas();
+},
+
+'adm-auditoria': function(){
+  return buildAdmAuditoria();
 },
 
 }; // end PAGES
@@ -2143,16 +2149,42 @@ function adminApi(action, payload){
   });
 }
 
+// Deja constancia en admin_audit_log de una accion administrativa.
+// Si falla (ej: problema de red), no interrumpe el flujo principal,
+// solo se registra un aviso en la consola.
+function logAudit(action, targetId, targetEmail, detalle){
+  if(!CU) return;
+  _sb.from('admin_audit_log').insert({
+    actor_id: CU.id,
+    actor_email: CU.email || '',
+    action: action,
+    target_id: targetId || null,
+    target_email: targetEmail || null,
+    detalle: detalle || null
+  }).then(function(res){
+    if(res.error) console.warn('No se pudo registrar en auditoria:', res.error.message);
+  });
+}
+
 function saveEmb(){
   var id = document.getElementById('emb-id').value;
   var nombre = (document.getElementById('emb-nombre')||{}).value.trim();
   var apellido = (document.getElementById('emb-apellido')||{}).value.trim();
-  var email = (document.getElementById('emb-email')||{}).value.trim();
+  var email = (document.getElementById('emb-email')||{}).value.trim().toLowerCase();
   var pass = (document.getElementById('emb-pass')||{}).value.trim();
   var tel = (document.getElementById('emb-tel')||{}).value.trim();
   var ciudad = (document.getElementById('emb-ciudad')||{}).value.trim();
   var refPor = (document.getElementById('emb-referido-por')||{}).value || '28e17e25-6f56-4891-99e9-ee02d32f3ab0';
   if(!nombre||!email){ toast('Nombre y email son obligatorios','err'); return; }
+  var emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if(!emailValido){ toast('El email no tiene un formato valido','err'); return; }
+  var dupEmb = (STATE.allEmbajadores||[]).find(function(x){
+    return x.email && x.email.toLowerCase()===email && x.id!==id;
+  });
+  if(dupEmb){
+    toast('Ya existe un embajador con ese email: '+(dupEmb.nombre||'')+' '+(dupEmb.apellido||''),'err');
+    return;
+  }
   var profileData = {
     nombre:nombre, apellido:apellido, email:email,
     telefono:tel, ciudad:ciudad, referred_by:refPor||null,
@@ -2161,6 +2193,7 @@ function saveEmb(){
   if(id){
     _sb.from('profiles').update(profileData).eq('id',id).then(function(res){
       if(res.error){toast('Error: '+res.error.message,'err');return;}
+      logAudit('editar_embajador', id, email, 'Datos actualizados');
       toast(nombre+' actualizado','ok');
       closeModal('m-emb'); loadData(); goPage('adm-embajadores');
     });
@@ -2192,6 +2225,7 @@ function saveEmb(){
             profileData.id = uid;
             _sb.from('profiles').update(profileData).eq('id', uid).then(function(res2){
               if(res2.error){toast('Error perfil: '+res2.error.message,'err');return;}
+              logAudit('crear_embajador', uid, email, 'Recreado (el email ya existia en Auth)');
               toast(nombre+' creado con acceso al sistema','ok');
               closeModal('m-emb');
               setTimeout(function(){ alert('Credenciales de '+nombre+':\nEmail: '+email+'\nContrasena: '+pass); },300);
@@ -2204,6 +2238,7 @@ function saveEmb(){
       profileData.id = authData.id;
       _sb.from('profiles').insert(profileData).then(function(res){
         if(res.error){toast('Error perfil: '+res.error.message,'err');return;}
+        logAudit('crear_embajador', authData.id, email, 'Creado desde cero');
         toast(nombre+' creado con acceso al sistema','ok');
         closeModal('m-emb');
         setTimeout(function(){ alert('Credenciales de '+nombre+':\nEmail: '+email+'\nContrasena: '+pass); },300);
@@ -2226,6 +2261,7 @@ function resetEmbPassword(id, nombre){
       return;
     }
     toast('Contrasena de '+nombre+' actualizada','ok');
+    logAudit('reset_password', id, nombre, 'Contrasena restablecida manualmente por admin');
     setTimeout(function(){ alert('Nueva contrasena de '+nombre+':\n'+pass); }, 300);
   }).catch(function(err){
     toast('Error de conexion: '+err.message,'err');
@@ -2245,6 +2281,7 @@ function deleteEmb(id){
       // Borramos el perfil igual para no dejar nada colgado en la tabla.
       _sb.from('profiles').delete().eq('id',id).then(function(res){
         if(res.error){toast('Error: '+res.error.message,'err');return;}
+        logAudit('eliminar_embajador', id, e.email||'', 'Nombre: '+(e.nombre||'')+' '+(e.apellido||''));
         toast((e.nombre||'')+' eliminado','err');
         loadData(); goPage('adm-embajadores');
       });
@@ -2252,6 +2289,7 @@ function deleteEmb(id){
       toast('Aviso: no se pudo contactar al servidor para borrar Auth ('+err.message+'). Se borro solo el perfil.','err');
       _sb.from('profiles').delete().eq('id',id).then(function(res){
         if(res.error){toast('Error: '+res.error.message,'err');return;}
+        logAudit('eliminar_embajador', id, e.email||'', 'Nombre: '+(e.nombre||'')+' '+(e.apellido||'')+' (fallo el borrado en Auth)');
         toast((e.nombre||'')+' eliminado','err');
         loadData(); goPage('adm-embajadores');
       });
@@ -2703,11 +2741,55 @@ function toggleTheme(){
   document.querySelectorAll('.theme-toggle-btn').forEach(function(b){ b.textContent = next==='light' ? '🌙' : '☀️'; });
 }
 
+function buildAdmAuditoria(){
+  var h = '<div class="page-title">Registro de Auditoría</div>';
+  h += '<div class="page-sub">Quién hizo qué y cuándo, en las acciones administrativas del panel</div>';
+  h += '<div id="audit-log-container" style="margin-top:16px">Cargando...</div>';
+  return h;
+}
+
+function loadAuditLog(){
+  var box = document.getElementById('audit-log-container');
+  if(!box) return;
+  _sb.from('admin_audit_log').select('*').order('created_at',{ascending:false}).limit(200).then(function(res){
+    if(!box) return; // la persona pudo haber cambiado de pagina mientras cargaba
+    if(res.error){ box.innerHTML = '<div class="f12" style="color:var(--red)">Error al cargar: '+res.error.message+'</div>'; return; }
+    var rows = res.data || [];
+    if(!rows.length){ box.innerHTML = '<div class="f12" style="color:var(--t2)">Todavía no hay acciones registradas.</div>'; return; }
+    var labels = {
+      crear_embajador:'Creó embajador', editar_embajador:'Editó embajador',
+      eliminar_embajador:'Eliminó embajador', reset_password:'Restableció contraseña'
+    };
+    var html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">';
+    html += '<thead><tr style="text-align:left;border-bottom:1px solid var(--bd2);color:var(--t2)">' +
+      '<th style="padding:8px 10px">Fecha</th><th style="padding:8px 10px">Quién</th>' +
+      '<th style="padding:8px 10px">Acción</th><th style="padding:8px 10px">Sobre</th>' +
+      '<th style="padding:8px 10px">Detalle</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      var fecha = new Date(r.created_at).toLocaleString('es-AR');
+      html += '<tr style="border-bottom:1px solid var(--bd)">' +
+        '<td style="padding:8px 10px;white-space:nowrap;color:var(--t2)">'+fecha+'</td>' +
+        '<td style="padding:8px 10px">'+(r.actor_email||'-')+'</td>' +
+        '<td style="padding:8px 10px;font-weight:700">'+(labels[r.action]||r.action)+'</td>' +
+        '<td style="padding:8px 10px">'+(r.target_email||'-')+'</td>' +
+        '<td style="padding:8px 10px;color:var(--t2)">'+(r.detalle||'-')+'</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table></div>';
+    box.innerHTML = html;
+  }).catch(function(err){
+    if(box) box.innerHTML = '<div class="f12" style="color:var(--red)">Error de conexion: '+err.message+'</div>';
+  });
+}
+
 // ═══ AFTER RENDER ═══
 function afterRender(id){
   document.querySelectorAll('[data-close]').forEach(function(btn){
     btn.onclick = function(){ closeModal(btn.dataset.close); };
   });
+  if(id==='adm-auditoria'){
+    loadAuditLog();
+  }
   if(id==='ingresos' || id==='adm-mis-ingresos'){
     var btn=document.getElementById('btn-nuevo-ingreso');
     if(btn) btn.addEventListener('click',function(){ abrirModalIngreso(); });
