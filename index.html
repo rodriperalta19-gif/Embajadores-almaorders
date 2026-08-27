@@ -688,7 +688,10 @@ var NAV_ADM = [
   { id:'adm-embajadores', ico:'👥', label:'Embajadores' },
   { id:'adm-ingresos', ico:'💰', label:'Ingresos' },
   { id:'adm-estadisticas', ico:'📈', label:'Estadísticas' },
-  { id:'adm-auditoria', ico:'📋', label:'Auditoría' },
+  // Auditoria oculta temporalmente: Supabase no reconoce la tabla nueva
+  // (schema cache). El codigo de la pagina queda intacto mas abajo,
+  // solo hay que descomentar esta linea el dia que se resuelva.
+  // { id:'adm-auditoria', ico:'📋', label:'Auditoría' },
 ];
 var TITLES = {
   'dashboard':'Dashboard','ingresos':'Mis Ingresos','referidos':'Mis Referidos',
@@ -1748,18 +1751,37 @@ function buildAdmEstadisticas(){
   var embs = STATE.allEmbajadores||[];
   var ingresos = STATE.allIngresos||[];
   var aprobados = ingresos.filter(function(i){return i.estado==='aprobado';});
-  var comisionesEmb = aprobados.reduce(function(s,i){return s+(i.comision||0);},0);
-  var ventasBrutas = aprobados.reduce(function(s,i){return s+(i.monto||0);},0);
-  var gananciaNeta = ventasBrutas - comisionesEmb;
+
+  // Separamos "mis ventas" (CEO, ambassador_id = mi propio id) de las
+  // ventas reales de los embajadores, porque antes se sumaban juntas
+  // sin distincion y no se podia saber cuanto generaba cada canal.
+  var misId = CU ? CU.id : null;
+  var ventasEmbajadores = aprobados.filter(function(i){ return i.ambassador_id !== misId; });
+  var misVentas = aprobados.filter(function(i){ return i.ambassador_id === misId; });
+
+  var comisionesEmb = ventasEmbajadores.reduce(function(s,i){return s+(i.comision||0);},0);
+  var ventasBrutasEmb = ventasEmbajadores.reduce(function(s,i){return s+(i.monto||0);},0);
+
+  var misVentasMonto = misVentas.reduce(function(s,i){return s+(i.monto||0);},0);
+  var misComision = misVentas.reduce(function(s,i){return s+(i.comision||0);},0);
+
+  // Totales combinados (toda la plata que entro, sin importar el canal)
+  var ventasBrutas = ventasBrutasEmb + misVentasMonto;
+  var gananciaNeta = ventasBrutas - comisionesEmb; // el "gasto" real es solo lo que se paga a embajadores externos
 
   var h = '<div class="page-title">Estadísticas Globales</div>';
-  h += '<div class="page-sub">Rendimiento completo del sistema</div>';
+  h += '<div class="page-sub">Rendimiento completo del sistema (embajadores + tus ventas propias)</div>';
 
   h += '<div class="g4">';
-  h += statCard('💰','Ventas brutas',fmtMoney(ventasBrutas),'Total gestionado','var(--g)');
-  h += statCard('💸','Comisiones embajadores',fmtMoney(comisionesEmb),'Total pagado','var(--blu)');
-  h += statCard('📈','Ganancia Alma Orders',fmtMoney(gananciaNeta),'Margen neto','var(--pur)');
+  h += statCard('💰','Ventas totales',fmtMoney(ventasBrutas),'Embajadores + CEO','var(--g)');
+  h += statCard('💸','Comisiones pagadas a embajadores',fmtMoney(comisionesEmb),'Solo lo que se les paga a ellos','var(--blu)');
+  h += statCard('📈','Ganancia Alma Orders',fmtMoney(gananciaNeta),'Ventas totales - comisiones pagadas','var(--pur)');
   h += statCard('👥','Embajadores activos',embs.filter(function(e){return e.is_active;}).length,'De '+embs.length+' totales','var(--gold)');
+  h += '</div>';
+
+  h += '<div class="g4">';
+  h += statCard('🏆','Ventas de embajadores','' + fmtMoney(ventasBrutasEmb),'Solo canal embajadores','var(--blu)');
+  h += statCard('🤝','Mis ventas (CEO)',fmtMoney(misVentasMonto),'Solo tu carga personal','var(--teal)');
   h += '</div>';
 
   // Margen visual
